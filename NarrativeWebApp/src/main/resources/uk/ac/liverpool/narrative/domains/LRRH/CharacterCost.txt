@@ -1,0 +1,11 @@
+CharacterCost
+# Characters	violence fairness adventure
+red 0.1 0.8 0.8
+granny 0.2 1 0.1
+hunter 0.8 0.8 1
+mother 0 1 0.3
+wolf 1 0 1
+bzou 1 0 1
+witch 1 0 1
+whitefairy 1 1 1
+prince 0.3 1 1

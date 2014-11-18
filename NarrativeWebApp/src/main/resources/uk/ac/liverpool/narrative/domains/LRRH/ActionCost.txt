@@ -1,0 +1,15 @@
+ActionCost
+#actions	violence fairness adventure
+walk-to n n 0.7
+tell-about n n 0.6
+eat-person 1 0 0.4
+escape-from-belly 0.3 1 0.8
+kill 1 n 0.7
+give n n 0.6
+resurrect n n 0.7
+greet n n 0.6
+fill-with-stones 0.9 n n
+drink n n 0.8
+drink-and-drown n n 0.8
+fall-in-love n 1 1
+run-away n 0.3 1

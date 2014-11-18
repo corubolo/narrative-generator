@@ -1,0 +1,7 @@
+ActionCost
+#actions	violence fairness adventure
+goto 1 1 1
+give 1 1 1
+greet 1 1 1
+open 1 1 1
+close 1 1 1

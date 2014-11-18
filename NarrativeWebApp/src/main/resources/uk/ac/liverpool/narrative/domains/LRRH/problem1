@@ -1,0 +1,136 @@
+(define (problem basic_story) (:domain LRRH)
+(:objects
+	forest grannyhome home river farfaraway - place
+	cake butter baguette - thing
+	flowers butterflies - beauty
+	red granny hunter mother prince - person
+    wolf bzou - animal
+    witch whitefairy - supernatural
+    knife - weapon
+    little-red-riding-hood - hood
+)
+
+(:init	  
+  	(alive prince)
+  	(handsome prince)
+    (not-approve mother)
+    (faraway farfaraway)
+    (at forest prince)
+	(canwalk prince)
+	(canhear prince)
+	(cantalk prince)
+	(knows wolf river)
+    (connected grannyhome river)
+	(has-water river)
+	(knows granny farfaraway)
+	
+  	(alive red)
+  	(alive mother)
+	(alive wolf)
+	(alive bzou)
+	(alive granny)
+	(alive hunter)
+	(alive witch)
+	(alive whitefairy)
+	
+	(at home red)
+	(at home mother)
+	(at forest wolf)
+	(at forest bzou)
+	(at forest hunter)
+	(at grannyhome granny)
+	(at grannyhome witch)
+
+    (extroverted red)
+
+	(hungry wolf)
+	(hungry bzou)
+
+	(canwalk red)
+	(canwalk wolf)
+	(canwalk bzou)
+	(canwalk witch)
+	(canwalk whitefairy)
+	(canwalk hunter)
+	
+	(cantalk red)
+	(cantalk wolf)
+	(cantalk bzou)
+	(cantalk witch)
+	(cantalk whitefairy)
+	(cantalk hunter)
+	(cantalk mother)
+
+	(canhear red)
+	(canhear wolf)
+	(canhear bzou)
+	(canhear witch)
+	(canhear whitefairy)
+	(canhear hunter)
+	(canhear mother)
+	
+	(knows mother red)
+	(knows mother grannyhome)
+	(knows mother home)
+	(knows mother wolf)
+	(knows wolf mother)
+
+	(knows red mother) 
+	(knows red granny) 
+	(knows red forest)
+	(knows red home)
+	(knows wolf forest)
+	(knows wolf flowers)
+	(knows wolf butterflies)
+	(knows bzou forest)
+	(knows bzou flowers)
+	(knows bzou butterflies)
+	(knows hunter grannyhome)
+	(knows hunter forest)
+	(knows granny red)
+	
+	(has mother cake)
+ 	(has mother butter)
+ 	(has mother baguette)
+	(has hunter knife)
+    (has mother little-red-riding-hood)
+    
+    (fond-of mother red)
+    (fond-of red mother)
+    (fond-of red granny)
+    (fond-of granny red)
+    (fond-of hunter red)
+	(fond-of red hunter)
+	(fond-of red flowers)
+	(fond-of red butterflies)	
+	(fond-of mother granny)
+	(fond-of granny mother)
+	(fond-of mother hunter)
+	(fond-of hunter mother)
+	(fond-of hunter granny)
+	(fond-of granny hunter)
+	(fond-of hunter whitefairy)
+	(fond-of whitefairy hunter)
+	(fond-of red whitefairy)
+	(fond-of whitefairy red)
+	(fond-of granny whitefairy)
+	(fond-of whitefairy granny)
+	(fond-of wolf witch)
+	(fond-of witch wolf)
+	(fond-of wolf bzou)
+	(fond-of bzou wolf)
+	
+	(connected home forest)
+	(connected forest grannyhome)
+	(connected forest home)
+	(connected grannyhome forest)
+	
+
+)
+ 
+(:goal
+	(and (has granny cake) (has granny butter) (escaped red) (escaped granny))
+)
+
+)
+

@@ -1,0 +1,34 @@
+(define (problem romanticProblem) (:domain romance)
+(:requirements :strips :typing )
+(:objects
+	placea placeb placec - place
+	cake cat - thing
+	john tony - person
+    	wolf - animal 
+) 
+
+(:init	  
+  	(alive john)
+	(alive tony)
+  
+	(at placea john)
+	(at placeb tony)
+	
+	(isclosed placeb)
+	(connected placea placeb)
+	(connected placeb placec)	
+	
+	(knows john placeb)
+    (knows john placec)
+    (sociable john)
+	(has john cake)
+
+)
+ 
+(:goal
+	(happy tony high)
+	
+	)
+
+
+)

@@ -1,0 +1,4 @@
+CharacterCost
+# Characters	violence fairness adventure
+john 1 1 1 
+tony 1 1 1

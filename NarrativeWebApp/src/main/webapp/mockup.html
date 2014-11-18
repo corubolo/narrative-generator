@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Red-o-matic - Create your stories!</title>
+
+<link rel="icon" type="image/png" href="icon_32x32.png" />
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<link href="style.css" rel="stylesheet" media="screen">
+<link rel="stylesheet"
+	href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/themes/blitzer/jquery-ui.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="http://code.jquery.com/ui/1.10.1/jquery-ui.js"></script>
+<script src="rest-js" type="text/javascript"></script>
+<script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript" src="raphael-min.js"></script>
+<script type="text/javascript" src="dracula_graffle.js"></script>
+<script type="text/javascript" src="dracula_graph.js"></script>
+<script type="text/javascript" src="dracula_algorithms.js"></script>
+<link href='http://fonts.googleapis.com/css?family=Droid+Sans|Milonga'
+	rel='stylesheet' type='text/css'>
+
+<script>
+	var domains;
+	var selected;
+	var selectedDom;
+	var currentStory;
+	var ded, ped, ted;
+	var update;
+	var id;
+	var currentProc;
+	var th;
+	var analysisIds = new Array();
+	var myid;
+
+	$(function() {
+		$(window).scroll(function() {
+			sticky_relocate();
+		});
+		loadid();
+		load();
+		$("#tabs").tabs();
+		$("#tabs2").tabs();
+		$("#stop").button().click(function() {
+			RESTService.stop({
+				"id" : id,
+				username : myid
+			});
+			clearTimeout(update);
+			$("#generateStories").button("option", "disabled", false);
+			$("#stop").button("option", "disabled", true);
+
+			n = 0;
+			var value = RESTService.getSolutionIdNum({
+				"domain" : selected,
+				username : myid
+			});
+
+			$("#numStories").text(value);
+			copyForUse();
+		});
+
+		var n = 0;
+		$("#generateStories").button().click(function() {
+			generateStoriesNow();
+		});
+
+		$("#visualiseTree").button()
+				.click(
+						function() {
+							$("#graph").html(
+									"<img src='" + REST.apiURL + "/narrative/"
+											+ myid + "/generateTree?id="
+											+ currentProc + "'>");
+							$("#graph").dialog();
+
+						});
+		$("#visualiseGraph").button().click(function() {
+			visualiseGraph();
+		});
+		$("#publish").button().click(
+				function() {
+					var ret = RESTService.getGraphData({
+						id : currentProc,
+						username : myid
+					});
+					currentStory = ret;
+					$("#story").empty();
+					var start;
+					var ends = new Array();
+					for ( var k = 0; k < ret.vertices.length; k++) {
+						if (ret.vertices[k].type == 'start')
+							start = ret.vertices[k];
+						else if (ret.vertices[k].type == 'end')
+							ends.push(ret.vertices[k]);
+					}
+					var cstart = start.name;
+					$("#story").append(
+							"Welcome to the interactive " + selected
+									+ " story<br><br>");
+					doStory(cstart, 0);
+					$("#story").dialog();
+				});
+
+		$("#copyForFilter").button().click(function() {
+			copyForUse();
+		});
+		$("#applyFilter").button().click(
+				function() {
+					var value = RESTService.cleanupPlans({
+						"id" : currentProc,
+						"method" : "Jacard",
+						"amount" : $("#slider-range-min").slider("value"),
+						username : myid
+					});
+					$("#storyDisplay").empty();
+					for ( var k = 0; k < value.length; k++) {
+						var c = value[k];
+						$("#storyDisplay").append(
+								"<br><h4>Story nr.  " + (k + 1)
+										+ " of length: " + c.actions.length
+										+ "</h4>")
+						for ( var i = 0; i < c.actions.length; i++) {
+							$("#storyDisplay").append(c.actions[i] + "<br>");
+						}
+					}
+					$("#numStoriesPr2").text(value.length);
+					$("#numStoriesPr1").text(value.length);
+				});
+
+		$("#applyChar").button().click(
+				function() {
+					var value = RESTService.applyStoryFilter({
+						"id" : currentProc,
+						"actionProp" : $("#actionProp").val(),
+						"charProp" : $("#charProp").val(),
+						"amount" : $("#slider-range-min2").slider("value"),
+						username : myid
+					});
+					$("#storyDisplay").empty();
+					for ( var k = 0; k < value.length; k++) {
+						var c = value[k];
+						$("#storyDisplay").append(
+								"<br><h4>Story nr.  " + (k + 1)
+										+ " of length: " + c.actions.length
+										+ "</h4>")
+						for ( var i = 0; i < c.actions.length; i++) {
+							$("#storyDisplay").append(c.actions[i] + "<br>");
+						}
+					}
+					$("#numStoriesPr2").text(value.length);
+					$("#numStoriesPr1").text(value.length);
+				});
+
+		$("#applyStory").button().click(
+				function() {
+					var value = RESTService.applyStoryFilter({
+						"id" : currentProc,
+						"actionProp" : $("#actionProp").val(),
+						"authorProp" : $("#authorProp").val(),
+						"amount" : $("#slider-range-min2").slider("value"),
+						username : myid
+					});
+					$("#storyDisplay").empty();
+					for ( var k = 0; k < value.length; k++) {
+						var c = value[k];
+						$("#storyDisplay").append(
+								"<br><h4>Story nr.  " + (k + 1)
+										+ " of length: " + c.actions.length
+										+ "</h4>")
+						for ( var i = 0; i < c.actions.length; i++) {
+							$("#storyDisplay").append(c.actions[i] + "<br>");
+						}
+					}
+					$("#numStoriesPr2").text(value.length);
+					$("#numStoriesPr1").text(value.length);
+				});
+
+		$(document).tooltip();
+		$("#slider-range-min").slider({
+			range : "max",
+			value : 30,
+			min : 0,
+			max : 100,
+			slide : function(event, ui) {
+				$("#amount").text(ui.value);
+			}
+		});
+		$("#slider-range-min2").slider({
+			range : "max",
+			value : 30,
+			min : 0,
+			max : 100,
+			slide : function(event, ui) {
+				$("#amount2").text(ui.value);
+			}
+		});
+		$("#amount2").text($("#slider-range-min2").slider("value"));
+		$("#amount").text($("#slider-range-min").slider("value"));
+		$("#accordion").accordion({
+			heightStyle : "content",
+			collapsible : true
+		});
+		var value = RESTService.activeJobs({
+			username : myid
+		});
+		if (value.length == 1) {
+			var c = value[0];
+			selected = c.domainName;
+			openDomain();
+			$("#tabs").tabs("option", "disabled", false);
+			$("#tabs").tabs("option", "active", 2);
+		} else if (selected) {
+			openDomain();
+			$("#tabs").tabs("option", "disabled", false);
+		}
+	});
+	function findDest(ret, v) {
+		var r = new Array();
+		for ( var k = 0; k < ret.edges.length; k++) {
+			if (ret.edges[k].source == v)
+				r.push(ret.edges[k]);
+		}
+		return r;
+	}
+
+	function visualiseGraph() {
+		var ret = RESTService.getGraphData({
+			id : currentProc,
+			username : myid
+		});
+		var g = new Graph();
+
+		$("#graph").html("<div id='dagraph'></div>");
+		for ( var k = 0; k < ret.vertices.length; k++) {
+			if (ret.vertices[k].type == 'start')
+				g.addNode(ret.vertices[k].name, {
+					label : "Start",
+					fill : "#fa8f",
+				});
+			else if (ret.vertices[k].type == 'end')
+				g.addNode(ret.vertices[k].name, {
+					label : "End",
+					fill : "#56f",
+				});
+			else
+				g.addNode(ret.vertices[k].name, {
+					label : " ",
+					fill : "#16f"
+				});
+
+		}
+		for ( var k = 0; k < ret.edges.length; k++) {
+			g.addEdge(ret.edges[k].source, ret.edges[k].destination, {
+				directed : true,
+				label : ret.edges[k].label,
+				"stroke-width" : ret.edges[k].size
+			});
+		}
+		var redraw;
+		/* layout the graph using the Spring layout implementation */
+		var layouter = new Graph.Layout.Spring(g);
+		var renderer = new Graph.Renderer.Raphael('dagraph', g, 1500, 1500);
+
+		redraw = function() {
+			layouter.layout();
+			renderer.draw();
+		};
+		$("#graph").dialog();
+		//$( "#graph" ).on( "dialogresize", function( event, ui ) {redraw();} );
+		redraw();
+	}
+
+	function copyForUse() {
+		currentProc = RESTService.copyPlansDomain({
+			"domain" : selected,
+			username : myid
+		});
+		var value = RESTService.retrievePlans({
+			"id" : currentProc,
+			username : myid
+		});
+		$("#storyDisplay").empty();
+		for ( var k = 0; k < value.length; k++) {
+			var c = value[k];
+			$("#storyDisplay").append(
+					"<br><h4>Story nr.  " + (k + 1) + " of length: "
+							+ c.actions.length + "</h4>")
+			for ( var i = 0; i < c.actions.length; i++) {
+				$("#storyDisplay").append(c.actions[i] + "<br>");
+			}
+		}
+		$("#numStoriesPr2").text(value.length);
+		$("#numStoriesPr1").text(value.length);
+
+	}
+
+	function doStory(cstart, depth) {
+		var next = findDest(currentStory, cstart);
+		for ( var c = 0; c < 20; c++)
+			$("#ggg" + (depth + c)).remove();
+		$("#story").append("<div id='ggg"+depth+"'>");
+		while (next.length > 0) {
+			if (next.length == 1) {
+				$("#ggg" + depth).append(next[0].label + "<br>");
+				cstart = next[0].destination;
+			} else {
+				$("#ggg" + depth).append(
+						"<br><b>Please select the next action</b><br>");
+				for ( var l = 0; l < next.length; l++) {
+					$("#ggg" + depth).append(
+							"<a onclick='doStory(" + next[l].destination + ","
+									+ (depth + 1) + ")' href='#'> "
+									+ next[l].label + "</a><br>");
+				}
+				break;
+			}
+			next = findDest(currentStory, cstart);
+		}
+		$("#story").append("</div>");
+	}
+
+	function loadid() {
+		var tmp = $.QueryString["myid"];
+
+		if (tmp) {
+			myid = tmp;
+		} else {
+			if (typeof (Storage) !== "undefined") {
+				if (localStorage.myid)
+					myid = localStorage.myid;
+				else {
+					myid = makeid();
+					localStorage.myid = myid;
+				}
+			} else {
+				myid = makeid();
+			}
+			/* window.location = window.location + "?myid="+myid; */
+		}
+		tmp = $.QueryString["sw"];
+		if (tmp)
+			selected = tmp;
+	}
+
+	function makeid() {
+		var text = "";
+		var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+		for ( var i = 0; i < 5; i++)
+			text += possible
+					.charAt(Math.floor(Math.random() * possible.length));
+
+		return text;
+	}
+	function load() {
+		domains = RESTService.listSw({
+			username : myid
+		});
+		for ( var a = 0; a < domains.length; a++) {
+			$("#domains").append(
+					"<li class='ui-widget-content'>" + domains[a].name
+							+ "</li>");
+		}
+		$("#domains").selectable({
+			selected : function(event, ui) {
+				$(ui.selected).siblings().removeClass("ui-selected");
+			}
+		});
+		jobs = RESTService.listSw({
+			username : myid
+		});
+
+	}
+
+	function generateStoriesNow() {
+		
+		selected = "LRRH";
+		selectedDom = domains[4];
+		id = RESTService.getPlansID({
+			name : selected,
+			domain : selectedDom.domain,
+			problem : selectedDom.problem[0],
+			template : selectedDom.template,
+			algo : "BranchingEnforcedHillClimbingSearch",
+			seed : "0",
+			step : "0",
+			username : myid
+		});
+		generateStoriesNow2();
+	}
+	function generateStoriesNow2() {
+		$("#generateStories").button("option", "disabled", true);
+		$("#stop").button("option", "disabled", false);
+		$("#result").empty();
+		var tottmp = 1;
+		update = window.setInterval(function() {
+			if (RESTService.status({
+				"id" : id,
+				username : myid
+
+			}) == "true") {
+				clearTimeout(update);
+				$("#generateStories").button("option", "disabled", false);
+				$("#stop").button("option", "disabled", true);
+				n = 0;
+				var value = RESTService.retrievePlans({
+					"id" : id,
+					username : myid
+				});
+				$("#result").empty();
+				for ( var k = 0; k < value.length; k++) {
+					var c = value[k];
+					$("#result").append(
+							"<br><h4>Story nr.  " + (k + 1) + " of length: "
+									+ c.actions.length + "</h4>")
+					for ( var i = 0; i < c.actions.length; i++) {
+						$("#result").append(c.actions[i] + "<br>");
+					}
+				}
+				var value = RESTService.getSolutionIdNum({
+					"domain" : selected,
+					username : myid
+				});
+
+				$("#numStories").text(value);
+				copyForUse();
+
+			} else {
+
+				var value = RESTService.statusSol({
+					"id" : id,
+					username : myid
+				});
+
+				for ( var k = 0; k < value.length; k++) {
+					var c = value[k];
+					$("#result").append(
+							"<br><h4>Story nr.  " + (tottmp + k)
+									+ " of length: " + c.actions.length
+									+ "</h4>")
+					for ( var i = 0; i < c.actions.length; i++) {
+						$("#result").append(c.actions[i] + "<br>");
+					}
+				}
+				tottmp += value.length;
+
+			}
+		}, 1500);
+	}
+
+	(function($) {
+		$.QueryString = (function(a) {
+			if (a == "")
+				return {};
+			var b = {};
+			for ( var i = 0; i < a.length; ++i) {
+				var p = a[i].split('=');
+				if (p.length != 2)
+					continue;
+				b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+			}
+			return b;
+		})(window.location.search.substr(1).split('&'))
+	})(jQuery);
+	function sticky_relocate() {
+		var window_top = $(window).scrollTop();
+		var div_top = $('#sticky-anchor').offset().top;
+		if (window_top > div_top)
+			$('#sticky').addClass('stick')
+		else
+			$('#sticky').removeClass('stick');
+	}
+</script>
+
+</head>
+<body>
+	<a name="top"></a>
+
+	<div id='logo' align='center'>
+		<span> <img src="icon_64.png" alt="logo" class="img-rounded">
+		</span>
+
+	</div>
+
+	<div id="tabs">
+		<ul>
+			<li><a href="redomaticAbout.html">About this</a></li>
+			<li><a href="#tabs-1">Your recipe</a></li>
+			<li><a href="#tabs-2">Generate stories</a></li>
+			<li><a href="#tabs-3">Explore</a></li>
+
+		</ul>
+		<div id="tabs-1">
+			<div id="tabs2">
+				<ul>
+					<li><a href="#tabs-21">Story setting</a></li>
+					<li><a href="#tabs-22">Story time</a></li>
+					<li><a href="#tabs-23">Subject</a></li>
+					<li><a href="#tabs-24">Characters</a></li>
+					<li><a href="#tabs-25">Moral</a></li>
+
+				</ul>
+				<div id="tabs-21">
+					Define a location (setting) for your story:<br>
+					<form action="">
+						<input type="radio" name="sex" value="male">Mountains<br>
+						<input type="radio" name="sex" value="female">Forest<br>
+						<input type="radio" name="sex" value="female">Moon<br>
+						<input type="radio" name="sex" value="female">Desert<br>
+					</form>
+
+					<button id="generateDomain" title="">Create story world</button>
+				</div>
+				<div id="tabs-22">
+					Define a time for your story:<br>
+					<form action="">
+						<input type="radio" name="sex" value="male">Middle ages<br>
+						<input type="radio" name="sex" value="female">French
+						revolution<br> <input type="radio" name="sex" value="female">Contemporary<br>
+						<input type="radio" name="sex" value="female">Future<br>
+					</form>
+					<button id="generateDomain" title="">Create story world</button>
+
+				</div>
+				<div id="tabs-23">
+					Define a subject for your story:<br>
+					<form action="">
+						<input type="radio" name="sex" value="male">Red riding
+						hood<br> <input type="radio" name="sex" value="female">Jurney
+						of the hero revolution<br> <input type="radio" name="sex"
+							value="female">find your the way home<br> <input
+							type="radio" name="sex" value="female" disabled="disabled">Missing
+						piece of the puzzle<br>
+					</form>
+					<button id="generateDomain" title="">Create story world</button>
+
+				</div>
+				<div id="tabs-24">
+					Define casting and characters for your story:<br> <select>
+						<option value="volvo">Red story characters</option>
+						<option value="saab">Ali Baba characters</option>
+						<option value="mercedes">Hansel and Gretel</option>
+					</select>
+
+					<form action="">
+						Main character<select>
+							<option value="volvo">Red</option>
+							<option value="saab">Hansel</option>
+						</select><br> Bad guy <select>
+							<option value="volvo">Wolf</option>
+							<option value="saab">Evil witch</option>
+						</select><br> Saviour<select>
+							<option value="volvo">Hunter</option>
+							<option value="saab">Gretel</option>
+						</select><br>
+					</form>
+					<button id="generateDomain" title="">Create story world</button>
+
+				</div>
+				<div id="tabs-25">
+					Define a moral for your story:<br>
+					<form action="">
+						<input type="radio" name="sex" value="male">Listen to the
+						advice from your parents <br> <input type="radio" name="sex"
+							value="female">Be wary of strangers<br>
+					</form>
+					<button id="generateDomain" title="">Create story world</button>
+
+				</div>
+			</div>
+			<!-- <button id="save">Save story world</button> -->
+
+		</div>
+		<div id="tabs-2">
+
+
+			Your recipe:<br> Setting: Moon<br> Story time: Future<br>
+			Subject: Find your way home<br> Characters: Red as main
+			character, evil witch as bad guy, Gretel as saviour<br> Moral:
+			be wary of strnagers<br> <br>
+
+
+			<div id="sticky-anchor"></div>
+			<div id="sticky">
+				<button id="generateStories">Generate stories</button>
+				<button id="stop" disabled="disabled">Stop</button>
+				<a href="#top">Back to top</a>
+			</div>
+			<div id="result"></div>
+		</div>
+		<div id="tabs-3">
+			<div class="row-fluid">
+
+				<div class="span6" style="float: left; width: 340px;">
+					<h3>Domain stories</h3>
+					Total number of stories: <span id='numStories'>0</span><br> <br>
+					<span title="Strength of the filter (higher for fewer stories)">Amount
+						of filtering:</span> <span id="amount"></span>
+					<div id="slider-range-min"></div>
+					<button id="applyFilter"
+						title="applies the filtering to the current set of stories">Filter</button>
+
+
+
+					<h3>Visualise and play</h3>
+					<button id="visualiseTree" title="">Visualise story tree</button>
+					<button id="publish" title="">Play branching story</button>
+					
+				</div>
+
+
+				<div class="span6" style="margin-left: 420px;">
+					<h3>Currently working on: <span id='numStoriesPr2'>0</span>
+					stories </h3>
+					<div id='storyDisplay'></div>
+
+				</div>
+
+			</div>
+
+		</div>
+	</div>
+	<div id="dialog" title="Test results"></div>
+	<div id="graph" title="Graph"></div>
+	<div id="story" title="Interactive story"></div>
+	<!-- 	<iframe
+		src="//www.facebook.com/plugins/like.php?href=http%3A%2F%2Ffabio.corubolo.org%3A8888%2FNarrativeWebApp%2Ftest.html&amp;send=false&amp;layout=standard&amp;width=450&amp;show_faces=true&amp;font&amp;colorscheme=light&amp;action=like&amp;height=80&amp;appId=149418941753234"
+		scrolling="no" frameborder="0"
+		style="border: none; overflow: hidden; width: 450px; height: 80px;"
+		allowTransparency="true"></iframe> -->
+</body>
+</html>

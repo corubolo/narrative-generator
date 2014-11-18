@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+ 
+	<display-name>Archetype Created Web Application</display-name>
+	<!-- <context-param>
+		<param-name>resteasy.scan</param-name>
+		<param-value>true</param-value>
+	</context-param> -->
+	<context-param>
+		<param-name>resteasy.resources</param-name>
+		<param-value>uk.ac.liverpool.narrative.RESTService</param-value>
+	</context-param>
+	<context-param>
+		<param-name>resteasy.async.job.service.enabled</param-name>
+		<param-value>true</param-value>
+	</context-param>
+
+
+	<listener>
+		<listener-class>
+			org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap</listener-class>
+	</listener>
+	<servlet>
+		<servlet-name>resteasy-servlet</servlet-name>
+		<servlet-class>
+			org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>resteasy-servlet</servlet-name>
+		<url-pattern>/narrative/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+
+		<servlet-name>RESTEasy JSAPI</servlet-name>
+
+		<servlet-class>org.jboss.resteasy.jsapi.JSAPIServlet</servlet-class>
+
+	</servlet>
+
+	<servlet-mapping>
+
+		<servlet-name>RESTEasy JSAPI</servlet-name>
+
+		<url-pattern>/rest-js</url-pattern>
+
+	</servlet-mapping>
+</web-app>
+
+
+
+
+
+
+
+

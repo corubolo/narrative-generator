@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Branching story generator</title>
+
+<link rel="icon" type="image/png" href="icon_32x32.png" />
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+<link href="style.css" rel="stylesheet" media="screen">
+<link rel="stylesheet"
+	href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/themes/cupertino/jquery-ui.css" />
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+<script src="http://code.jquery.com/ui/1.10.1/jquery-ui.js"></script>
+<script src="rest-js" type="text/javascript"></script>
+<script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript" src="raphael-min.js"></script>
+<script type="text/javascript" src="dracula_graffle.js"></script>
+<script type="text/javascript" src="dracula_graph.js"></script>
+<script type="text/javascript" src="dracula_algorithms.js"></script>
+<link href='http://fonts.googleapis.com/css?family=Droid+Sans|Milonga'
+	rel='stylesheet' type='text/css'>
+
+<script>
+	var domains;
+	var selected;
+	var selectedDom;
+	var currentStory;
+	var ded, ped, ted;
+	var update;
+	var id;
+	var currentProc;
+	var th;
+	var analysisIds = new Array();
+	var myid;
+	
+	
+	$(function() {
+		$(window).scroll(function() {
+			sticky_relocate();
+		});
+		loadid();
+		load();
+		$("#tabs").tabs({
+			disabled : [ 1, 2, 3 ]
+		});
+		$("#tabs2").tabs();
+		//$("#tabs").hide();
+		$("#opendomain").hide();
+		$(window).resize(
+				function() {
+					var s = (window.innerHeight - 200 - $(logo).height() - $(
+							opendomain).height());
+					$('#dom').css('height', s + 'px');
+					$('#prob').css('height', s + 'px');
+					$('#templ').css('height', s + 'px');
+					ded.resize();
+					ped.resize();
+					ted.resize();
+				});
+		$("#stop").button().click(function() {
+			RESTService.stop({
+				"id" : id,
+				username : myid
+			});
+			clearTimeout(update);
+			$("#generateStories").button("option", "disabled", false);
+			$("#stop").button("option", "disabled", true);
+
+			n = 0;
+			var value = RESTService.getSolutionIdNum({
+				"domain" : selected,
+				username : myid
+			});
+
+			$("#numStories").text(value);
+			copyForUse();
+		});
+		$("#openSw").button().click(function() {
+			$("#opendomain").hide();
+			selected = "";
+			$("#selection").dialog("open");
+			$("#result").empty();
+		});
+		$("#closeSw").button().click(function() {
+			$("#opendomain").hide();
+			$("#tabs").hide();
+			selected = "";
+			$("#selection").dialog("open");
+			$("#result").empty();
+			/* 	$("#").show(); */
+		});
+		var algos = RESTService.getBrAlgos();
+		for ( var c = 0; c < algos.length; c++) {
+			var opt = $("<option value='"+algos[c]+ "' class='genalgo'>"
+					+ algos[c] + "</option>");
+			$("#genalgo").append(opt);
+		}
+		$("#saveSelect").dialog({
+			resizable : false,
+			height : 440,
+			modal : true,
+			autoOpen : false,
+			buttons : {
+				"Save" : function() {
+					$("#saveSelect").dialog("close");
+					var saveto = $("#saveit").val();
+					saveDomain(saveto);
+				},
+				"Cancel" : function() {
+					$("#saveSelect").dialog("close");
+					
+				},
+			}
+		});
+		$("#selection").dialog({
+			resizable : false,
+			height : 540,
+			modal : true,
+			autoOpen : false,
+			buttons : {
+				"Open" : function() {
+					$("#selection").dialog("close");
+					$("#tabs").tabs("option", "disabled", false);
+					selected = $(".ui-selected").text();
+					openDomain();
+				},
+
+			}
+		});
+
+		var n = 0;
+		$("#generateStories").button().click(function() {
+			generateStoriesNow();
+		});
+		$("#saveSw").button().click(function() {
+			$("#saveit").val(selectedDom.name);
+			$("#saveSelect").dialog("open");
+			
+		});
+		function saveDomain(saveto) {
+			
+			var prev = $("#probnum").text();
+			selectedDom = jQuery.extend({}, selectedDom);
+			selectedDom.problem[prev] = ped.getValue();
+			selectedDom.domain = ded.getValue();
+			selectedDom.template = ted.getValue();
+			selectedDom.name = saveto;
+			selected = saveto;
+			domains.push(selectedDom);
+			
+			var a = $("#actionProp").val();
+			var b = $("#charProp").val();
+			var c = $("#authorProp").val();
+			if (a)
+				selectedDom.actionProp = a;
+			if (b)
+				selectedDom.charProp = b;
+			if (c)
+				selectedDom.storyProp = c;
+			var tmp = $.QueryString["myid"];
+			if (tmp)
+				tmp = window.location;
+			else
+				tmp = window.location + "?myid=" + myid;
+			tmp = tmp + "&sw="+selected;
+			$("#domtxt")
+			.html(
+					"Current World: <i>"
+							+ selected
+							+ "</i> - Share it: <input id ='shareit' type='text' value='"
+							+ tmp
+							+ "' onclick='this.focus ();this.select ();'>");
+			console.log(tmp);
+			for ( var a = 0; a < domains.length; a++) {
+				$("#domains").append(
+						"<li class='ui-widget-content'>" + domains[a].name
+								+ "</li>");
+			}
+			$("#domains").append(
+					"<li class='ui-widget-content'>" +saveto
+							+ "</li>");
+			$("#domains").selectable({
+				selected : function(event, ui) {
+					$(ui.selected).siblings().removeClass("ui-selected");
+				}
+			});
+			$("#selection").dialog({
+				resizable : false,
+				height : 540,
+				modal : true,
+				autoOpen : false,
+				buttons : {
+					"Open" : function() {
+						$("#selection").dialog("close");
+						$("#tabs").tabs("option", "disabled", false);
+						selected = $(".ui-selected").text();
+						openDomain();
+					},
+
+				}
+			});
+			RESTService.saveSw({
+				username : myid,
+				$entity : selectedDom
+
+			});
+			
+		}
+		;
+
+		$("#testProblem").button().click(function() {
+			var ret = RESTService.validate({
+				domain : ded.getValue(),
+				problem : ped.getValue(),
+				username : myid
+			});
+			$("#dialog").html("<pre>" + ret + "</pre>");
+			$("#dialog").dialog();
+		});
+		$("#visualiseTree").button()
+				.click(
+						function() {
+							$("#graph").html(
+									"<img src='" + REST.apiURL + "/narrative/"
+											+ myid + "/generateTree?id="
+											+ currentProc + "'>");
+							$("#graph").dialog();
+
+						});
+		$("#visualiseGraph").button().click(function() {
+			visualiseGraph();
+		});
+		$("#publish").button().click(
+				function() {
+					var ret = RESTService.getGraphData({
+						id : currentProc,
+						username : myid
+					});
+					currentStory = ret;
+					$("#story").empty();
+					var start;
+					var ends = new Array();
+					for ( var k = 0; k < ret.vertices.length; k++) {
+						if (ret.vertices[k].type == 'start')
+							start = ret.vertices[k];
+						else if (ret.vertices[k].type == 'end')
+							ends.push(ret.vertices[k]);
+					}
+					var cstart = start.name;
+					$("#story").append(
+							"Welcome to the interactive " + selected
+									+ " story<br><br>");
+					doStory(cstart, 0);
+					$("#story").dialog();
+				});
+
+		$("#deleteAll").button().click(function() {
+			var value = RESTService.deleteAllId({
+				"domain" : selected,
+				username : myid
+			});
+			$("#numStories").text('0');
+		});
+
+		$("#copyForFilter").button().click(function() {
+			copyForUse();
+		});
+		$("#applyFilter").button().click(
+				function() {
+					var value = RESTService.cleanupPlans({
+						"id" : currentProc,
+						"method" : $("#filtering").val(),
+						"amount" : $("#slider-range-min").slider("value"),
+						username : myid
+					});
+					$("#storyDisplay").empty();
+					for ( var k = 0; k < value.length; k++) {
+						var c = value[k];
+						$("#storyDisplay").append(
+								"<br><h4>Story nr.  " + (k + 1)
+										+ " of length: " + c.actions.length
+										+ "</h4>")
+						for ( var i = 0; i < c.actions.length; i++) {
+							$("#storyDisplay").append(c.actions[i] + "<br>");
+						}
+					}
+					$("#numStoriesPr2").text(value.length);
+					$("#numStoriesPr1").text(value.length);
+				});
+
+		$("#applyChar").button().click(
+				function() {
+					var value = RESTService.applyStoryFilter({
+						"id" : currentProc,
+						"actionProp" : $("#actionProp").val(),
+						"charProp" : $("#charProp").val(),
+						"amount" : $("#slider-range-min2").slider("value"),
+						username : myid
+					});
+					$("#storyDisplay").empty();
+					for ( var k = 0; k < value.length; k++) {
+						var c = value[k];
+						$("#storyDisplay").append(
+								"<br><h4>Story nr.  " + (k + 1)
+										+ " of length: " + c.actions.length
+										+ "</h4>")
+						for ( var i = 0; i < c.actions.length; i++) {
+							$("#storyDisplay").append(c.actions[i] + "<br>");
+						}
+					}
+					$("#numStoriesPr2").text(value.length);
+					$("#numStoriesPr1").text(value.length);
+				});
+
+		$("#applyStory").button().click(
+				function() {
+					var value = RESTService.applyStoryFilter({
+						"id" : currentProc,
+						"actionProp" : $("#actionProp").val(),
+						"authorProp" : $("#authorProp").val(),
+						"amount" : $("#slider-range-min2").slider("value"),
+						username : myid
+					});
+					$("#storyDisplay").empty();
+					for ( var k = 0; k < value.length; k++) {
+						var c = value[k];
+						$("#storyDisplay").append(
+								"<br><h4>Story nr.  " + (k + 1)
+										+ " of length: " + c.actions.length
+										+ "</h4>")
+						for ( var i = 0; i < c.actions.length; i++) {
+							$("#storyDisplay").append(c.actions[i] + "<br>");
+						}
+					}
+					$("#numStoriesPr2").text(value.length);
+					$("#numStoriesPr1").text(value.length);
+				});
+		ded = ace.edit("dom");
+		ded.setTheme("ace/theme/chrome");
+		ded.getSession().setMode("ace/mode/clojure");
+		ded.setHighlightActiveLine(false);
+		ded.setShowPrintMargin(false);
+		ped = ace.edit("prob");
+		ped.setTheme("ace/theme/chrome");
+		ped.getSession().setMode("ace/mode/clojure");
+		ped.setHighlightActiveLine(false);
+		ped.setShowPrintMargin(false);
+		ted = ace.edit("templ");
+		ted.setTheme("ace/theme/chrome");
+		ted.getSession().setMode("ace/mode/clojure");
+		ted.setHighlightActiveLine(false);
+		ted.setShowPrintMargin(false);
+		$(document).tooltip();
+		$("#slider-range-min").slider({
+			range : "max",
+			value : 30,
+			min : 0,
+			max : 100,
+			slide : function(event, ui) {
+				$("#amount").text(ui.value);
+			}
+		});
+		$("#slider-range-min2").slider({
+			range : "max",
+			value : 30,
+			min : 0,
+			max : 100,
+			slide : function(event, ui) {
+				$("#amount2").text(ui.value);
+			}
+		});
+		$("#amount2").text($("#slider-range-min2").slider("value"));
+		$("#amount").text($("#slider-range-min").slider("value"));
+		$("#accordion").accordion({
+			heightStyle : "content",
+			collapsible : true
+		});
+		var value = RESTService.activeJobs({
+			username : myid
+		});
+		if (value.length==1) {
+			var c = value[0];
+			selected = c.domainName;
+			openDomain();
+			$("#tabs").tabs("option", "disabled", false);
+			$( "#tabs" ).tabs( "option", "active", 2 );
+		} else if (selected) {
+			openDomain();
+			$("#tabs").tabs("option", "disabled", false);
+		}
+	});
+	function findDest(ret, v) {
+		var r = new Array();
+		for ( var k = 0; k < ret.edges.length; k++) {
+			if (ret.edges[k].source == v)
+				r.push(ret.edges[k]);
+		}
+		return r;
+	}
+
+	function visualiseGraph() {
+		var ret = RESTService.getGraphData({
+			id : currentProc,
+			username : myid
+		});
+		var g = new Graph();
+
+		$("#graph").html("<div id='dagraph'></div>");
+		for ( var k = 0; k < ret.vertices.length; k++) {
+			if (ret.vertices[k].type == 'start')
+				g.addNode(ret.vertices[k].name, {
+					label : "Start",
+					fill : "#fa8f",
+				});
+			else if (ret.vertices[k].type == 'end')
+				g.addNode(ret.vertices[k].name, {
+					label : "End",
+					fill : "#56f",
+				});
+			else
+				g.addNode(ret.vertices[k].name, {
+					label : " ",
+					fill : "#16f"
+				});
+
+		}
+		for ( var k = 0; k < ret.edges.length; k++) {
+			g.addEdge(ret.edges[k].source, ret.edges[k].destination, {
+				directed : true,
+				label : ret.edges[k].label,
+				"stroke-width" : ret.edges[k].size
+			});
+		}
+		var redraw;
+		/* layout the graph using the Spring layout implementation */
+		var layouter = new Graph.Layout.Spring(g);
+		var renderer = new Graph.Renderer.Raphael('dagraph', g, 1500, 1500);
+
+		redraw = function() {
+			layouter.layout();
+			renderer.draw();
+		};
+		$("#graph").dialog();
+		//$( "#graph" ).on( "dialogresize", function( event, ui ) {redraw();} );
+		redraw();
+	}
+
+	function copyForUse() {
+		currentProc = RESTService.copyPlansDomain({
+			"domain" : selected,
+			username : myid
+		});
+		var value = RESTService.retrievePlans({
+			"id" : currentProc,
+			username : myid
+		});
+		$("#storyDisplay").empty();
+		for ( var k = 0; k < value.length; k++) {
+			var c = value[k];
+			$("#storyDisplay").append(
+					"<br><h4>Story nr.  " + (k + 1) + " of length: "
+							+ c.actions.length + "</h4>")
+			for ( var i = 0; i < c.actions.length; i++) {
+				$("#storyDisplay").append(c.actions[i] + "<br>");
+			}
+		}
+		$("#numStoriesPr2").text(value.length);
+		$("#numStoriesPr1").text(value.length);
+
+	}
+
+	function doStory(cstart, depth) {
+		var next = findDest(currentStory, cstart);
+		for ( var c = 0; c < 20; c++)
+			$("#ggg" + (depth + c)).remove();
+		$("#story").append("<div id='ggg"+depth+"'>");
+		while (next.length > 0) {
+			if (next.length == 1) {
+				$("#ggg" + depth).append(next[0].label + "<br>");
+				cstart = next[0].destination;
+			} else {
+				$("#ggg" + depth).append(
+						"<br><b>Please select the next action</b><br>");
+				for ( var l = 0; l < next.length; l++) {
+					$("#ggg" + depth).append(
+							"<a onclick='doStory(" + next[l].destination + ","
+									+ (depth + 1) + ")' href='#'> "
+									+ next[l].label + "</a><br>");
+				}
+				break;
+			}
+			next = findDest(currentStory, cstart);
+		}
+		$("#story").append("</div>");
+	}
+
+	function loadid() {
+		var tmp = $.QueryString["myid"];
+		
+		if (tmp) {
+			myid = tmp;
+		} else {
+			if (typeof (Storage) !== "undefined") {
+				if (localStorage.myid)
+					myid = localStorage.myid;
+				else {
+					myid = makeid();
+					localStorage.myid = myid;
+				}
+			} else {
+				myid = makeid();
+			}
+			/* window.location = window.location + "?myid="+myid; */
+		}
+		tmp = $.QueryString["sw"];
+		if (tmp)
+			selected = tmp;
+	}
+
+	function makeid() {
+		var text = "";
+		var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+		for ( var i = 0; i < 5; i++)
+			text += possible
+					.charAt(Math.floor(Math.random() * possible.length));
+
+		return text;
+	}
+	function load() {
+		domains = RESTService.listSw({
+			username : myid
+		});
+		for ( var a = 0; a < domains.length; a++) {
+			$("#domains").append(
+					"<li class='ui-widget-content'>" + domains[a].name
+							+ "</li>");
+		}
+		$("#domains").selectable({
+			selected : function(event, ui) {
+				$(ui.selected).siblings().removeClass("ui-selected");
+			}
+		});
+		jobs = RESTService.listSw({
+			username : myid
+		});
+
+	}
+
+	function generateStoriesNow() {
+		id = RESTService.getPlansID({
+			name : selected,
+			domain : ded.getValue(),
+			problem : selectedDom.problem[$("#genprob").val()],
+			template : ted.getValue(),
+			algo : $("#genalgo").val(),
+			seed : $("#rseed").val(),
+			step : $("#step").val(),
+			username : myid
+		});
+		generateStoriesNow2();
+	}	
+	function generateStoriesNow2() {	
+		$("#generateStories").button("option", "disabled", true);
+		$("#stop").button("option", "disabled", false);
+		$("#result").empty();
+		var tottmp = 1;
+		update = window.setInterval(function() {
+			if (RESTService.status({
+				"id" : id,
+				username : myid
+
+			}) == "true") {
+				clearTimeout(update);
+				$("#generateStories").button("option", "disabled", false);
+				$("#stop").button("option", "disabled", true);
+				n = 0;
+				var value = RESTService.retrievePlans({
+					"id" : id,
+					username : myid
+				});
+				$("#result").empty();
+				for ( var k = 0; k < value.length; k++) {
+					var c = value[k];
+					$("#result").append(
+							"<br><h4>Story nr.  " + (k + 1) + " of length: "
+									+ c.actions.length + "</h4>")
+					for ( var i = 0; i < c.actions.length; i++) {
+						$("#result").append(c.actions[i] + "<br>");
+					}
+				}
+				var value = RESTService.getSolutionIdNum({
+					"domain" : selected,
+					username : myid
+				});
+
+				$("#numStories").text(value);
+				copyForUse();
+
+			} else {
+
+				var value = RESTService.statusSol({
+					"id" : id,
+					username : myid
+				});
+
+				for ( var k = 0; k < value.length; k++) {
+					var c = value[k];
+					$("#result").append(
+							"<br><h4>Story nr.  " + (tottmp + k)
+									+ " of length: " + c.actions.length
+									+ "</h4>")
+					for ( var i = 0; i < c.actions.length; i++) {
+						$("#result").append(c.actions[i] + "<br>");
+					}
+				}
+				tottmp += value.length;
+
+			}
+		}, 1500);
+	}
+	function openDomain() {
+		var tmp = $.QueryString["myid"];
+		if (tmp)
+			tmp = window.location;
+		else
+			tmp = window.location + "?myid=" + myid + "&sw="+selected;
+		
+			
+		$("#domtxt")
+				.html(
+						"Current World: <i>"
+								+ selected
+								+ "</i> - Share it: <input id ='shareit' type='text' value='"
+								+ tmp
+								+ "' onclick='this.focus ();this.select ();'>");
+
+		$("#opendomain").show();
+
+		$("#selection").hide();
+		for ( var a = 0; a < domains.length; a++) {
+			var d = domains[a];
+
+			if (d.name == selected) {
+				var value = RESTService.getSolutionIdNum({
+					"domain" : selected,
+					username : myid
+				});
+				$("#storyDisplay").empty();
+				$("#numStories").text(value);
+				ded.setValue(d.domain);
+				ped.setValue(d.problem[0]);
+				selectedDom = d;
+				var aps = (d.actionProp == null);
+				$("#applyChar").button("option", "disabled", aps);
+				$("#applyStory").button("option", "disabled", aps);
+				$("#actionProp").val(d.actionProp);
+				$("#charProp").val(d.charProp);
+				$("#authorProp").val(d.storyProp);
+				$("#problems").empty();
+				$("#probnum").text("0");
+				$("#genprob").empty();
+				for ( var c = 0; c < d.problem.length; c++) {
+					var test = $(
+							"<button id='"+c+ "' class='probnum'>Problem " + c
+									+ "</button>").click(function() {
+						var prev = $("#probnum").text();
+						selectedDom.problem[prev] = ped.getValue();
+						var k = $(this).attr("id");
+						ped.setValue(selectedDom.problem[k]);
+						ped.clearSelection();
+						$("#probnum").text(k);
+					});
+					$("#problems").append(test);
+					var opt = $("<option value='"+c+ "' class='genprobnum'>Problem "
+							+ c + "</option>");
+					$("#genprob").append(opt);
+				}
+
+				ted.setValue(d.template);
+				var s = (window.innerHeight - 200 - $(logo).height() - $(
+						opendomain).height());
+				$('#dom').css('height', s + 'px');
+				$('#prob').css('height', s + 'px');
+				$('#templ').css('height', s + 'px');
+				ded.resize();
+				ped.resize();
+				ted.resize();
+				ded.clearSelection();
+				ped.clearSelection();
+				ted.clearSelection();
+			}
+		}
+		var value = RESTService.activeJobs({
+			username : myid
+		});
+		for ( var k = 0; k < value.length; k++) {
+			var c = value[k];
+			if (c.domainName == selected) {
+				id = c.id;
+				generateStoriesNow2();
+				$( "#tabs" ).tabs( "option", "active", 2 );
+			}
+		}
+
+	}
+
+	(function($) {
+		$.QueryString = (function(a) {
+			if (a == "")
+				return {};
+			var b = {};
+			for ( var i = 0; i < a.length; ++i) {
+				var p = a[i].split('=');
+				if (p.length != 2)
+					continue;
+				b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+			}
+			return b;
+		})(window.location.search.substr(1).split('&'))
+	})(jQuery);
+	function sticky_relocate() {
+		var window_top = $(window).scrollTop();
+		var div_top = $('#sticky-anchor').offset().top;
+		if (window_top > div_top)
+			$('#sticky').addClass('stick')
+		else
+			$('#sticky').removeClass('stick');
+	}
+</script>
+
+</head>
+<body>
+	<a name="top"></a>
+
+	<div id='logo' align='center'>
+		<span> <img src="icon_64.png" alt="logo" class="img-rounded">
+		</span>
+		<button id='openSw'>Open story world</button>
+		<span id="opendomain"> <span id="domtxt"></span> <span
+			id="dombuttons">
+
+				<button id='saveSw'>Save story world</button> <!-- <button id='closeSw'>Close story world</button> -->
+		</span>
+		</span>
+	</div>
+	<div id="selection" title="Please select a story world">
+		Available domains:<br> <br>
+		<ul id="domains">
+		</ul>
+		<!-- 		<button id="sel">Proceed</button> -->
+	</div>
+
+	<div id="saveSelect" title="Please select or enter a story name">
+		Save story:<br> <br>
+		<ul id="domains">
+		</ul>
+		<input id='saveit' type='text' value=''>
+	</div>
+	<div id="tabs">
+		<ul>
+			<li><a href="Branchingstorygeneratorabout.html">About this
+					service</a></li>
+			<li><a href="#tabs-1">Story world</a></li>
+			<li><a href="#tabs-2">Story generation</a></li>
+			<li><a href="#tabs-3">Story analysis</a></li>
+
+		</ul>
+		<div id="tabs-1">
+			<div id="tabs2">
+				<ul>
+					<li><a href="#tabs-21">Domain editor</a></li>
+					<li><a href="#tabs-22">Problem editor</a></li>
+					<li><a href="#tabs-23">Template editor</a></li>
+				</ul>
+				<div id="tabs-21">
+
+					<div id="dom"></div>
+				</div>
+				<div id="tabs-22">
+					<div style="width: 100%;">
+						<div id="header">
+
+
+							<button id='testProblem'>Test problem</button>
+							Current problem nr.: <span id='probnum'></span>
+						</div>
+
+						<!-- 						<div class="row-fluid">
+							<div id="problems" class="span1">...</div>
+							<div id="prob" class="span11">...</div>
+						</div> -->
+						<div id="problems" style="float: left; width: 140px;"></div>
+
+						<div id="prob" style="margin-left: 160px;"></div>
+						<!-- 	<div id="prob"></div> -->
+					</div>
+				</div>
+				<div id="tabs-23">
+
+					<div id="templ"></div>
+				</div>
+			</div>
+			<!-- <button id="save">Save story world</button> -->
+
+		</div>
+		<div id="tabs-2">
+
+
+			<!-- <button id="gen">Generate plans</button> -->
+
+			<label>Selected problem </label> <select id="genprob"></select> <br>
+			<label>Selected algorithm</label> <select id="genalgo">
+			</select> <br> <label>Number of steps between branches
+				(0=default, lower for more stories) </label><input id="step" type="number"
+				min="0" max="5" value="0" size="2"> <label>Random
+				seed (0 for random) </label><input id="seed" type="number" value="0"
+				size="5"> <br>
+			<div id="sticky-anchor"></div>
+			<div id="sticky">
+				<button id="generateStories">Generate stories</button>
+				<button id="stop" disabled="disabled">Stop</button>
+				<a href="#top">Back to top</a>
+			</div>
+			<div id="result"></div>
+			<!-- <button id="useAnalysis" disabled="disabled" tooltip="Use the current stories for analysis">Copy gen. stories for analysis</button> -->
+		</div>
+		<div id="tabs-3">
+			<div class="row-fluid">
+
+				<div class="span6" style="float: left; width: 340px;">
+					<h3>Domain stories</h3>
+					Total number of stories: <span id='numStories'>0</span><br>
+
+					<button id="copyForFilter"
+						title="will create a  copy of generated stories for filtering">Use
+						all stories</button>
+
+
+					<!-- Current stories for processing: <span id='numStoriesPr1'>0</span><br> -->
+
+					<h3>Similarity filtering: remove similar</h3>
+					<label>Filtering method </label> <select id="filtering">
+						<option value="Jacard" title="Jacard similarity based">Jacard</option>
+						<option value="ActionDelta"
+							title="If the sequence of actions is different of at least Delta; that at least delta actions are different, in any order">ActionDelta</option>
+						<option value="StateDelta"
+							title="state difference at the end: at least delta number of propositions must be different">StateDelta</option>
+						<option value="permutation"
+							title="if an action list is a permutation of another">Permutation</option>
+						<option value="Dice" title="Dice similarity based">Dice</option>
+						<option value="equalState"
+							title="Compares if the two end states are equals at the end: that is if the facts are equals at the end (same propositions that is same name and parameters)">EqualState</option>
+						<option value="LCSDelta"
+							title="If the sequence of actions is different of at least Delta; given the LCS algorithm">LCSDelta</option>
+
+					</select> <br> <span
+						title="Strength of the filter (higher for fewer stories)">Amount
+						of filtering:</span> <span id="amount"></span>
+					<div id="slider-range-min"></div>
+					<button id="applyFilter"
+						title="applies the filtering to the current set of stories">Apply</button>
+
+					<h3>Property based filtering</h3>
+
+					<div id="accordion">
+						<h3>Action properties</h3>
+						<div>
+							<textarea rows="13" id='actionProp'></textarea>
+						</div>
+						<h3>Character properties</h3>
+						<div>
+							<textarea rows="13" id='charProp'></textarea>
+						</div>
+						<h3>Author direction</h3>
+						<div>
+							<textarea rows="5" id='authorProp'></textarea>
+						</div>
+
+
+					</div>
+					<!-- <button id="actionEdit" title="">Edit action properties</button>
+
+						<button id="charEdit" title="">Edit character properties</button>
+
+						<button id="storyEdit" title="">Edit author direction</button> -->
+					<br> <span>Percentage of stories to keep: </span><span
+						id="amount2"></span>%
+					<div id="slider-range-min2"></div>
+					<button id="applyChar" title="">Apply character filter</button>
+					<button id="applyStory" title="">Apply author dir. filter</button>
+					<br>
+					<h3>Visualise and play</h3>
+					<button id="visualiseTree" title="">Visualise story tree</button>
+
+					<button id="visualiseGraph" title="">Visualise story graph</button>
+
+					<button id="publish" title="">Play branching story</button>
+					<h3>Reset and delete</h3>
+					<button id="deleteAll"
+						title="will delete all generated stories for the current domain">Delete
+						all stories permanently</button>
+
+
+				</div>
+
+
+				<div class="span6" style="margin-left: 420px;">
+					<h3>Processed stories</h3>
+					<br>Currently working on: <span id='numStoriesPr2'>0</span>
+					stories (press the 'Use all stories' button to reset)
+
+					<div id='storyDisplay'></div>
+
+				</div>
+
+			</div>
+
+		</div>
+	</div>
+	<div id="dialog" title="Test results"></div>
+	<div id="graph" title="Graph"></div>
+	<div id="story" title="Interactive story"></div>
+	<!-- 	<iframe
+		src="//www.facebook.com/plugins/like.php?href=http%3A%2F%2Ffabio.corubolo.org%3A8888%2FNarrativeWebApp%2Ftest.html&amp;send=false&amp;layout=standard&amp;width=450&amp;show_faces=true&amp;font&amp;colorscheme=light&amp;action=like&amp;height=80&amp;appId=149418941753234"
+		scrolling="no" frameborder="0"
+		style="border: none; overflow: hidden; width: 450px; height: 80px;"
+		allowTransparency="true"></iframe> -->
+</body>
+</html>

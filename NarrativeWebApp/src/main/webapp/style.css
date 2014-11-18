@@ -1,0 +1,122 @@
+body {
+	margin: 0;
+	padding: 16pt 16pt 16pt 16pt;
+	background-color: #e6f5fc;
+	font-family: Helvetica, Arial;
+}
+
+#sticky {
+	background-color: #fff;
+	-moz-border-radius: 0.5ex;
+	-webkit-border-radius: 0.5ex;
+	border-radius: 0.5ex;
+	color: #000;
+}
+
+#sticky.stick {
+	-moz-border-radius: 0 0 0.5em 0.5em;
+	-webkit-border-radius: 0 0 0.5em 0.5em;
+	border-radius: 0 0 0.5em 0.5em;
+	position: fixed;
+	top: 0;
+	z-index: 10000;
+}
+
+#feedback {
+	font-size: 1.4em;
+}
+
+#selection {
+	width: auto;
+}
+
+#logo {
+	padding-top: 16pt;
+	padding-bottom: 10pt;
+}
+
+#tabs {
+	font-size: 11pt;
+}
+
+#result {
+	font-size: 11pt;
+	border-width: 1pt;
+	border: thin;
+	border-color: gray;
+}
+
+#domains .ui-selecting {
+	background: #FECA40;
+}
+
+#domains .ui-selected {
+	background: #F39814;
+	color: white;
+}
+
+#domains {
+	list-style-type: none;
+	margin: 5;
+	padding: 5;
+	font-size: 10pt;
+}
+
+#domains li {
+	margin: 3px;
+	padding: 0.4em;
+	font-size: 1.4em;
+	height: 18px;
+}
+
+#result {
+	font-family: 'Milonga', cursive,;
+	font: 150%;
+}
+
+textarea {
+	height: 50%;
+	width: 80%;
+}
+
+#dom {
+	position: relative;
+	border: 1px solid #DDD;
+	border-radius: 4px;
+	border-bottom-right-radius: 0px;
+	margin-top: 5px;
+	font-size: 12pt;
+}
+
+#prob {
+	position: relative;
+	border: 1px solid #DDD;
+	border-radius: 4px;
+	border-bottom-right-radius: 0px;
+	margin-top: 5px;
+	font-size: 12pt;
+}
+
+#templ {
+	position: relative;
+	border: 1px solid #DDD;
+	border-radius: 4px;
+	border-bottom-right-radius: 0px;
+	margin-top: 5px;
+	font-size: 12pt;
+}
+
+P {
+	padding: 12px 0;
+	margin: 0;
+	line-height: 21px;
+	font-size: 13pt;
+}
+
+/* button {
+	font-size: 13pt;
+	padding: 6px;
+	-moz-border-radius: 0.5ex;
+	-webkit-border-radius: 0.5ex;
+	border-radius: 0.5ex;
+} */

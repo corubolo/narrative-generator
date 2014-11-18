@@ -1,0 +1,51 @@
+(define (problem templateProblem) (:domain AliBaba)
+(:requirements :strips :typing )
+(:objects
+	forest - place
+	cave - securePlace
+	teasure - locatable
+	fortyThieves AliBaba Cassim wealtyWoman poorWoman - person
+    wolf - animal
+	OpenSesame - secretWords
+
+) 
+
+(:init	  
+  	
+	
+  	(alive AliBaba)
+	(alive Cassim)
+ 	(alive fortyThieves)
+  
+	(at forest AliBaba)
+	(at forest fortyThieves)
+	(at forest Cassim)
+	(likes AliBaba Cassim)
+	(likes Cassim AliBaba)
+	(isclosed cave)
+	(knows AliBaba forest)
+	(knows AliBaba cave)
+	(knows fortyThieves forest)
+	(knows fortyThieves cave)
+	(knows fortyThieves OpenSesame)
+    
+ 	(has fortyThieves teasure)
+	(has forest wood)
+	(works-as AliBaba woodcutter)
+ 	(isclosed cave)
+)
+ 
+(:goal
+	(and 
+	 	(has AliBaba teasure)
+	)
+	
+)
+(:constraints
+   (and
+     (sometime (has AliBaba wood))
+     (sometime (has Cassim teasure))
+	)
+)
+
+)

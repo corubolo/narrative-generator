@@ -1,0 +1,50 @@
+(define (problem JasmineProblem) (:domain Jasmine)
+(:requirements :typing)
+
+(:objects
+	castle mountain - place
+	hero king jasmine dragon - character
+	geniez - genie
+	lamp - thing
+
+)
+
+(:init	
+	(female jasmine)
+	(male hero)
+	(male king)
+	(male dragon)
+	(male geniez)
+	(alive geniez)
+	(alive jasmine)
+	(alive hero)
+	(alive dragon)
+	(alive king)
+
+	(single jasmine)
+	(single king)
+	(single hero)
+	(single Dragon)
+	(single geniez)
+	(loves hero jasmine)
+	(loves king jasmine)
+
+	(at hero castle)
+	(at jasmine castle) 
+	(at lamp mountain)
+	(at dragon mountain)
+	(at king castle)
+	(at geniez mountain)
+	(has dragon lamp)
+
+)
+
+
+(:goal
+	(and 
+		(married-to jasmine king) 
+	)
+)
+
+)
+

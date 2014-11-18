@@ -1,0 +1,34 @@
+(define (problem templateProblem) (:domain tempdom)
+(:requirements :strips :typing )
+(:objects
+	placea placeb - place
+	cake - thing
+	john tony - person
+    wolf - animal 
+) 
+
+(:init	  
+  	
+	
+  	(alive john)
+	(alive tony)
+  
+	(at placea john)
+	(at placeb tony)
+	
+	(isclosed placeb)
+	(connected placea placeb)
+	
+	(knows john placeb)
+   	 (sociable john)
+	(has john cake)
+
+)
+ 
+(:goal
+	(and 
+		(has tony cake)
+	)
+)
+
+)

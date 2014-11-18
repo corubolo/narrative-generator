@@ -1,0 +1,3 @@
+AuthorDirection
+# violence goodness adventure
+AuthorDirection 0 n n
