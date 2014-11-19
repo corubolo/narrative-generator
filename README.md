@@ -46,9 +46,8 @@ The story is then filtered base on how good is the match between action and char
 It is finally possible to see the filtered stories as text, or in a tree or graph representation. It is also possible to play the merged story graph as in interactive fiction. 
 
 
-# Authors: Fabio Corubolo, Meriem Bendris 
-
-## Developed under guidance of Paul Watry
+## Principal Investigator: Paul Watry
+## Authors, Co-Investigators: Fabio Corubolo, Meriem Bendris 
 
 
 #Credits: 
